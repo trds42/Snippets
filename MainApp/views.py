@@ -1,6 +1,8 @@
 from django.http import Http404
 from django.shortcuts import render, redirect
 from MainApp.models import Snippet
+from MainApp.forms import SnippetForm, UserRegistrationForm
+from django.contrib import auth
 
 
 def index_page(request):
@@ -9,8 +11,27 @@ def index_page(request):
 
 
 def add_snippet_page(request):
-    context = {'pagename': 'Добавление нового сниппета'}
-    return render(request, 'pages/add_snippet.html', context)
+    if request.method == "GET":
+        form = SnippetForm()
+        context = {
+            'pagename': 'Добавление нового сниппета',
+            'form': form,
+        }
+        return render(request, 'pages/add_snippet.html', context)
+    elif request.method == "POST":
+        # print("form data:", list(request.POST.items()))
+        # snippet = Snippet(
+        #     name=request.POST["name"],
+        #     lang=request.POST["lang"],
+        #     code=request.POST["code"]
+        # )
+        # snippet.save()
+        form = SnippetForm(request.POST)
+        if form.is_valid():
+            snippet = form.save(commit=False)
+            snippet.user = request.user
+            snippet.save()
+        return redirect("snippets-list")
 
 
 def snippets_page(request):
@@ -29,3 +50,43 @@ def show_snippet_page(request, snippet_id):
         'snippet': snippet
     }
     return render(request, 'pages/show_snippet.html', context)
+
+
+def login_page(request):
+    if request.method == "POST":
+        username = request.POST.get("username")
+        password = request.POST.get("password")
+        # print("username =", username)
+        # print("password =", password)
+        user = auth.authenticate(request, username=username, password=password)
+        if user is not None:
+            auth.login(request, user)
+            # print("SUCCESS")
+        else:
+            # Return error message
+            pass
+        return redirect(request.META.get('HTTP_REFERER', '/'))
+
+    else:
+        raise Http404
+
+
+def logout_page(request):
+    auth.logout(request)
+    return redirect(request.META.get('HTTP_REFERER', '/'))
+
+
+def registration(request):
+    if request.method == "GET":
+        form = UserRegistrationForm()
+        context = {
+            'form': form
+        }
+        return render(request, 'pages/registration.html', context)
+    elif request.method == "POST":
+        form = UserRegistrationForm(request.POST)
+        if form.is_valid():
+            form.save()
+        else:
+            pass
+        return redirect('index')
