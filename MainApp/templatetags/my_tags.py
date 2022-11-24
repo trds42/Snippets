@@ -3,7 +3,7 @@ register = template.Library()
 
 
 def new_line(value):
-    value.replace('\n', '<br>')
+    value = value.replace('/n', '<br>')
     return value
 
 

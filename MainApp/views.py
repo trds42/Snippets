@@ -4,11 +4,22 @@ from MainApp.models import Snippet, Comment
 from MainApp.forms import SnippetForm, UserRegistrationForm, CommentForm
 from django.contrib import auth
 from django.db.models import Q
+from django.contrib.auth.decorators import login_required
+from django.core.exceptions import PermissionDenied
 
 
 def index_page(request):
-    context = {'pagename': 'PythonBin'}
-    return render(request, 'pages/index.html', context)
+    snippet_id = request.GET.get("search")
+    if snippet_id:
+        snippets = Snippet.objects.filter(id=snippet_id)
+        context = {
+            'pagename': 'Просмотр сниппетов',
+            'snippets': snippets
+        }
+        return render(request, 'pages/view_snippets.html', context)
+    else:
+        context = {'pagename': 'PythonBin'}
+        return render(request, 'pages/index.html', context)
 
 
 def add_snippet_page(request):
@@ -35,21 +46,20 @@ def add_snippet_page(request):
         return redirect("snippets-list")
 
 
+@login_required
 def snippet_delete(request, snippet_id):
     snippet = Snippet.objects.get(id=snippet_id)
-    snippet.delete()
-    return redirect("snippets-list")
+    if snippet.user == request.user:
+        snippet.delete()
+        return redirect("snippets-list")
+    else:
+        raise PermissionDenied
 
 
 def snippet_edit(request, snippet_id):
     snippet = Snippet.objects.get(id=snippet_id)
-    comment_form = CommentForm()
-    comments = snippet.comments.all()
     context = {
-        'pagename': 'Просмотр сниппетов',
         'snippet': snippet,
-        'comment_form': comment_form,
-        'comments': comments
     }
     return render(request, 'pages/show_snippet.html', context)
 
@@ -68,9 +78,14 @@ def snippets_page(request):
             snippets = Snippet.objects.filter(Q(public=True) | Q(user=request.user))
         else:
             snippets = Snippet.objects.exclude(public=False)
+    lang = request.GET.get('lang')
+    if lang is not None:
+        snippets = snippets.filter(lang=lang)
     context = {
         'pagename': pagename,
-        'snippets': snippets
+        'snippets': snippets,
+        'lang': lang,
+        'filter': filter
     }
     return render(request, 'pages/view_snippets.html', context)
 
@@ -80,7 +95,6 @@ def show_snippet_page(request, snippet_id):
     comment_form = CommentForm()
     comments = snippet.comments.all()
     context = {
-        'pagename': 'Просмотр сниппетов',
         'snippet': snippet,
         'comment_form': comment_form,
         'comments': comments

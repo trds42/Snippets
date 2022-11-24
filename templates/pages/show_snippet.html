@@ -20,7 +20,10 @@
                        <div class="col">
                            <div class="p-2 h-100" style="border:1px solid #ced4da; border-radius:5px;">
                                <p>
-                                   {{ snippet.code }}
+                                   {% load my_tags %}
+                                   {% autoescape off %}
+                                   {{ snippet.code|new_line }}
+                                   {% endautoescape %}
                                </p>
                            </div>
                        </div>
