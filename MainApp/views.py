@@ -81,11 +81,24 @@ def snippets_page(request):
     lang = request.GET.get('lang')
     if lang is not None:
         snippets = snippets.filter(lang=lang)
+
+    sort = request.GET.get('sort')
+    # print(f"{sort=}")
+    if sort == 'name':
+        snippets = snippets.order_by('name')
+        sort = '-name'
+    elif sort == '-name' or sort == 'init':
+        snippets = snippets.order_by('-name')
+        sort = 'name'
+    else:
+        sort = 'init'
+
     context = {
         'pagename': pagename,
         'snippets': snippets,
         'lang': lang,
-        'filter': filter
+        'filter': filter,
+        'sort': sort
     }
     return render(request, 'pages/view_snippets.html', context)
 
