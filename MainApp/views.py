@@ -3,6 +3,7 @@ from django.shortcuts import render, redirect
 from MainApp.models import Snippet, Comment
 from MainApp.forms import SnippetForm, UserRegistrationForm, CommentForm
 from django.contrib import auth
+from django.db.models import Q
 
 
 def index_page(request):
@@ -34,10 +35,41 @@ def add_snippet_page(request):
         return redirect("snippets-list")
 
 
-def snippets_page(request):
-    snippets = Snippet.objects.all()
+def snippet_delete(request, snippet_id):
+    snippet = Snippet.objects.get(id=snippet_id)
+    snippet.delete()
+    return redirect("snippets-list")
+
+
+def snippet_edit(request, snippet_id):
+    snippet = Snippet.objects.get(id=snippet_id)
+    comment_form = CommentForm()
+    comments = snippet.comments.all()
     context = {
         'pagename': 'Просмотр сниппетов',
+        'snippet': snippet,
+        'comment_form': comment_form,
+        'comments': comments
+    }
+    return render(request, 'pages/show_snippet.html', context)
+
+
+def snippets_page(request):
+    filter = request.GET.get('filter')
+    if filter:
+        pagename = 'Мои сниппеты'
+        if request.user.is_authenticated:
+            snippets = Snippet.objects.filter(user=request.user)
+        else:
+            return redirect("snippets-list")
+    else:
+        pagename = 'Просмотр сниппетов'
+        if request.user.is_authenticated:
+            snippets = Snippet.objects.filter(Q(public=True) | Q(user=request.user))
+        else:
+            snippets = Snippet.objects.exclude(public=False)
+    context = {
+        'pagename': pagename,
         'snippets': snippets
     }
     return render(request, 'pages/view_snippets.html', context)
@@ -45,8 +77,8 @@ def snippets_page(request):
 
 def show_snippet_page(request, snippet_id):
     snippet = Snippet.objects.get(id=snippet_id)
-    comment_form = CommentForm(request.POST)
-    comments = Comment.objects.all()
+    comment_form = CommentForm()
+    comments = snippet.comments.all()
     context = {
         'pagename': 'Просмотр сниппетов',
         'snippet': snippet,
@@ -110,5 +142,4 @@ def comment_add(request):
             comment.snippet = Snippet.objects.get(id=snippet_id)
             comment.save()
             return redirect("snippet-show", snippet_id)
-
     raise Http404

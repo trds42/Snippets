@@ -9,7 +9,7 @@ class SnippetForm(ModelForm):
     class Meta:
         model = Snippet
         # Описываем поля, которые будем заполнять в форме
-        fields = ['name', 'lang', 'code']
+        fields = ['name', 'lang', 'code', 'public']
         labels = {
             'name': '',
             'lang': '',
@@ -48,4 +48,10 @@ class CommentForm(ModelForm):
     class Meta:
         model = Comment
         fields = ["text"]
+        labels = {
+            'text': '',
+        }
+        widgets = {
+            'text': Textarea(attrs={"placeholder": "Ваш комментарий"}),
+        }
 
