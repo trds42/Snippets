@@ -1,7 +1,7 @@
 from django.http import Http404
 from django.shortcuts import render, redirect
-from MainApp.models import Snippet
-from MainApp.forms import SnippetForm, UserRegistrationForm
+from MainApp.models import Snippet, Comment
+from MainApp.forms import SnippetForm, UserRegistrationForm, CommentForm
 from django.contrib import auth
 
 
@@ -45,9 +45,13 @@ def snippets_page(request):
 
 def show_snippet_page(request, snippet_id):
     snippet = Snippet.objects.get(id=snippet_id)
+    comment_form = CommentForm(request.POST)
+    comments = Comment.objects.all()
     context = {
         'pagename': 'Просмотр сниппетов',
-        'snippet': snippet
+        'snippet': snippet,
+        'comment_form': comment_form,
+        'comments': comments
     }
     return render(request, 'pages/show_snippet.html', context)
 
@@ -87,6 +91,24 @@ def registration(request):
         form = UserRegistrationForm(request.POST)
         if form.is_valid():
             form.save()
+            return redirect('index')
         else:
-            pass
-        return redirect('index')
+            context = {
+                'form': form
+            }
+            return render(request, 'pages/registration.html', context)
+
+
+def comment_add(request):
+    if request.method == "POST":
+        comment_form = CommentForm(request.POST)
+        snippet_id = request.POST["snippet_id"]
+        if comment_form.is_valid():
+            comment = comment_form.save(commit=False)
+            comment.author = request.user
+            print("COMMENT USER", request.user)
+            comment.snippet = Snippet.objects.get(id=snippet_id)
+            comment.save()
+            return redirect("snippet-show", snippet_id)
+
+    raise Http404
