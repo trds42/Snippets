@@ -17,6 +17,9 @@ class Snippet(models.Model):
                              blank=True, null=True)
     public = models.BooleanField(editable=True, default=True)
 
+    def __str__(self):
+        return f"{self.id}. {self.name} by {self.user}"
+
 
 class Comment(models.Model):
     text = models.TextField(max_length=2000)

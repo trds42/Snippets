@@ -3,9 +3,10 @@ from django.shortcuts import render, redirect
 from MainApp.models import Snippet, Comment
 from MainApp.forms import SnippetForm, UserRegistrationForm, CommentForm
 from django.contrib import auth
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
+from django.contrib.auth.models import User
 
 
 def index_page(request):
@@ -78,6 +79,14 @@ def snippets_page(request):
             snippets = Snippet.objects.filter(Q(public=True) | Q(user=request.user))
         else:
             snippets = Snippet.objects.exclude(public=False)
+
+    users = User.objects.all().annotate(num_snippets=Count('snippet')).filter(num_snippets__gte=1)
+
+    filter_username = request.GET.get('filter_username')
+    if filter_username is not None:
+        filter_user = User.objects.get(username=filter_username)
+        snippets = snippets.filter(user=filter_user)
+
     lang = request.GET.get('lang')
     if lang is not None:
         snippets = snippets.filter(lang=lang)
@@ -98,7 +107,9 @@ def snippets_page(request):
         'snippets': snippets,
         'lang': lang,
         'filter': filter,
-        'sort': sort
+        'sort': sort,
+        'users': users,
+        'filter_username': filter_username
     }
     return render(request, 'pages/view_snippets.html', context)
 
