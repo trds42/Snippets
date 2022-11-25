@@ -80,7 +80,7 @@ def snippets_page(request):
         else:
             snippets = Snippet.objects.exclude(public=False)
 
-    users = User.objects.all().annotate(num_snippets=Count('snippet')).filter(num_snippets__gte=1)
+    users = User.objects.all().annotate(num_snippets=Count('snippets')).filter(num_snippets__gte=1)
 
     filter_username = request.GET.get('filter_username')
     if filter_username is not None:
@@ -181,3 +181,12 @@ def comment_add(request):
             comment.save()
             return redirect("snippet-show", snippet_id)
     raise Http404
+
+
+def user_rate(request):
+    users = User.objects.all().annotate(num_snippets=Count('snippets')).annotate(num_comments=Count('comments'))
+
+    context = {
+        'users': users,
+    }
+    return render(request, 'pages/user_rate.html', context)
